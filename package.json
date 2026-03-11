@@ -16,9 +16,9 @@
     "Other"
   ],
   "activationEvents": [
-    "workspaceContains:**/supabase/config.toml",
-    "onCommand:xtech-supabase.refresh"
+    "workspaceContains:**/supabase/config.toml"
   ],
+  "icon": "assets/xanectech-logo.png",
   "main": "./out/extension.js",
   "contributes": {
     "viewsContainers": {
@@ -26,7 +26,7 @@
         {
           "id": "supabase",
           "title": "Supabase",
-          "icon": "$(database)"
+          "icon": "assets/xanectech-logo-activity.svg"
         }
       ]
     },
