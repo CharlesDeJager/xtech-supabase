@@ -106,6 +106,46 @@
         "command": "xtech-supabase.viewStorageBucketDetails",
         "title": "View Storage Bucket Details",
         "icon": "$(archive)"
+      },
+      {
+        "command": "xtech-supabase.copySqlTable",
+        "title": "Copy SQL",
+        "icon": "$(clippy)"
+      },
+      {
+        "command": "xtech-supabase.copySqlView",
+        "title": "Copy SQL",
+        "icon": "$(clippy)"
+      },
+      {
+        "command": "xtech-supabase.copySqlFunction",
+        "title": "Copy SQL",
+        "icon": "$(clippy)"
+      },
+      {
+        "command": "xtech-supabase.copySqlPolicy",
+        "title": "Copy SQL",
+        "icon": "$(clippy)"
+      },
+      {
+        "command": "xtech-supabase.copySqlTrigger",
+        "title": "Copy SQL",
+        "icon": "$(clippy)"
+      },
+      {
+        "command": "xtech-supabase.copySqlIndex",
+        "title": "Copy SQL",
+        "icon": "$(clippy)"
+      },
+      {
+        "command": "xtech-supabase.copySqlRole",
+        "title": "Copy SQL",
+        "icon": "$(clippy)"
+      },
+      {
+        "command": "xtech-supabase.copySqlStorageBucket",
+        "title": "Copy SQL",
+        "icon": "$(clippy)"
       }
     ],
     "menus": {
@@ -166,6 +206,46 @@
           "command": "xtech-supabase.viewStorageBucketDetails",
           "when": "view == xtech-supabase.supabaseExplorer && viewItem =~ /^storageBucket-/",
           "group": "inline@1"
+        },
+        {
+          "command": "xtech-supabase.copySqlTable",
+          "when": "view == xtech-supabase.supabaseExplorer && viewItem =~ /^table-/",
+          "group": "inline@3"
+        },
+        {
+          "command": "xtech-supabase.copySqlView",
+          "when": "view == xtech-supabase.supabaseExplorer && viewItem =~ /^view-/",
+          "group": "inline@3"
+        },
+        {
+          "command": "xtech-supabase.copySqlFunction",
+          "when": "view == xtech-supabase.supabaseExplorer && viewItem =~ /^function-/",
+          "group": "inline@2"
+        },
+        {
+          "command": "xtech-supabase.copySqlPolicy",
+          "when": "view == xtech-supabase.supabaseExplorer && viewItem =~ /^policy-/",
+          "group": "inline@2"
+        },
+        {
+          "command": "xtech-supabase.copySqlTrigger",
+          "when": "view == xtech-supabase.supabaseExplorer && viewItem =~ /^trigger-/",
+          "group": "inline@2"
+        },
+        {
+          "command": "xtech-supabase.copySqlIndex",
+          "when": "view == xtech-supabase.supabaseExplorer && viewItem =~ /^index-/",
+          "group": "inline@2"
+        },
+        {
+          "command": "xtech-supabase.copySqlRole",
+          "when": "view == xtech-supabase.supabaseExplorer && viewItem =~ /^role-/",
+          "group": "inline@2"
+        },
+        {
+          "command": "xtech-supabase.copySqlStorageBucket",
+          "when": "view == xtech-supabase.supabaseExplorer && viewItem =~ /^storageBucket-/",
+          "group": "inline@2"
         }
       ]
     },

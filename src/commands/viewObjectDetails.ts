@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as crypto from 'crypto';
 import { Commands } from '../constants';
 import {
   DatabaseService,
@@ -21,6 +22,27 @@ import {
   StorageBucketNode,
 } from '../treeView/treeNodes';
 import { Logger } from '../logger';
+import {
+  generateCreateTableSql,
+  generateSelectSql,
+  generateFunctionSql,
+  generatePolicySql,
+  generateTriggerSql,
+  generateIndexSql,
+  generateRoleSql,
+  generateStorageBucketSql,
+} from './sqlGenerators';
+
+export {
+  generateCreateTableSql,
+  generateSelectSql,
+  generateFunctionSql,
+  generatePolicySql,
+  generateTriggerSql,
+  generateIndexSql,
+  generateRoleSql,
+  generateStorageBucketSql,
+};
 
 type ObjectNode = TableNode | ViewNode;
 
@@ -39,6 +61,7 @@ function buildWebviewHtml(
   headers: string[],
   rows: string[][],
   footerNote: string,
+  sqlSnippet?: string,
 ): string {
   const headerCells = headers.map((h) => `<th>${escapeHtml(h)}</th>`).join('');
 
@@ -60,11 +83,37 @@ function buildWebviewHtml(
       ? `<p class="empty">No rows found.</p>`
       : `<p class="row-count">${rows.length} row${rows.length !== 1 ? 's' : ''}${footerNote}</p>`;
 
+  const nonce = generateNonce();
+  const scriptCsp = sqlSnippet ? `script-src 'nonce-${nonce}';` : '';
+  const copyButton = sqlSnippet
+    ? `<button id="copy-sql-btn" class="copy-btn" data-sql="${escapeHtml(sqlSnippet)}">📋 Copy SQL</button>`
+    : '';
+  const copyScript = sqlSnippet
+    ? `<script nonce="${nonce}">
+  (function () {
+    var btn = document.getElementById('copy-sql-btn');
+    btn.addEventListener('click', function () {
+      navigator.clipboard.writeText(btn.dataset.sql).then(function () {
+        btn.textContent = '✓ Copied!';
+        btn.classList.add('copied');
+        setTimeout(function () {
+          btn.textContent = '📋 Copy SQL';
+          btn.classList.remove('copied');
+        }, 2000);
+      }).catch(function () {
+        btn.textContent = '✗ Failed to copy';
+        setTimeout(function () { btn.textContent = '📋 Copy SQL'; }, 2000);
+      });
+    });
+  })();
+</script>`
+    : '';
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; ${scriptCsp}">
   <style>
     body {
       font-family: var(--vscode-font-family);
@@ -81,7 +130,26 @@ function buildWebviewHtml(
     .subtitle {
       color: var(--vscode-descriptionForeground);
       font-size: 0.88em;
-      margin-bottom: 16px;
+      margin-bottom: 8px;
+    }
+    .actions {
+      margin-bottom: 12px;
+    }
+    .copy-btn {
+      font-family: var(--vscode-font-family);
+      font-size: 0.85em;
+      color: var(--vscode-button-foreground);
+      background-color: var(--vscode-button-background);
+      border: none;
+      border-radius: 3px;
+      padding: 4px 10px;
+      cursor: pointer;
+    }
+    .copy-btn:hover {
+      background-color: var(--vscode-button-hoverBackground);
+    }
+    .copy-btn.copied {
+      background-color: var(--vscode-testing-iconPassed, #4caf50);
     }
     .table-wrap {
       overflow-x: auto;
@@ -122,6 +190,7 @@ function buildWebviewHtml(
 <body>
   <h2>${escapeHtml(title)}</h2>
   <div class="subtitle">${escapeHtml(subtitle)}</div>
+  ${copyButton ? `<div class="actions">${copyButton}</div>` : ''}
   <div class="table-wrap">
     ${
       rows.length > 0
@@ -130,6 +199,7 @@ function buildWebviewHtml(
     }
   </div>
   ${emptyState}
+  ${copyScript}
 </body>
 </html>`;
 }
@@ -159,10 +229,33 @@ function stringifyValue(value: unknown): string {
   return String(value);
 }
 
+function generateNonce(): string {
+  return crypto.randomBytes(16).toString('hex');
+}
+
+async function copySqlToClipboard(
+  sql: string,
+  label: string,
+  logger: Logger,
+): Promise<void> {
+  try {
+    await vscode.env.clipboard.writeText(sql);
+    vscode.window.showInformationMessage(
+      `SQL for ${label} copied to clipboard.`,
+    );
+  } catch (err) {
+    logger.error(`Failed to copy SQL for ${label}`, err);
+    vscode.window.showErrorMessage(
+      `Failed to copy SQL to clipboard for ${label}.`,
+    );
+  }
+}
+
 function buildDetailHtml(
   title: string,
   subtitle: string,
   sections: Array<{ heading: string; body: string }>,
+  sqlSnippet?: string,
 ): string {
   const content = sections
     .map(
@@ -174,11 +267,37 @@ function buildDetailHtml(
     )
     .join('\n');
 
+  const nonce = generateNonce();
+  const scriptCsp = sqlSnippet ? `script-src 'nonce-${nonce}';` : '';
+  const copyButton = sqlSnippet
+    ? `<button id="copy-sql-btn" class="copy-btn" data-sql="${escapeHtml(sqlSnippet)}">📋 Copy SQL</button>`
+    : '';
+  const copyScript = sqlSnippet
+    ? `<script nonce="${nonce}">
+  (function () {
+    var btn = document.getElementById('copy-sql-btn');
+    btn.addEventListener('click', function () {
+      navigator.clipboard.writeText(btn.dataset.sql).then(function () {
+        btn.textContent = '✓ Copied!';
+        btn.classList.add('copied');
+        setTimeout(function () {
+          btn.textContent = '📋 Copy SQL';
+          btn.classList.remove('copied');
+        }, 2000);
+      }).catch(function () {
+        btn.textContent = '✗ Failed to copy';
+        setTimeout(function () { btn.textContent = '📋 Copy SQL'; }, 2000);
+      });
+    });
+  })();
+</script>`
+    : '';
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; ${scriptCsp}">
   <style>
     body {
       font-family: var(--vscode-font-family);
@@ -196,7 +315,26 @@ function buildDetailHtml(
     .subtitle {
       color: var(--vscode-descriptionForeground);
       font-size: 0.88em;
+      margin-bottom: 8px;
+    }
+    .actions {
       margin-bottom: 16px;
+    }
+    .copy-btn {
+      font-family: var(--vscode-font-family);
+      font-size: 0.85em;
+      color: var(--vscode-button-foreground);
+      background-color: var(--vscode-button-background);
+      border: none;
+      border-radius: 3px;
+      padding: 4px 10px;
+      cursor: pointer;
+    }
+    .copy-btn:hover {
+      background-color: var(--vscode-button-hoverBackground);
+    }
+    .copy-btn.copied {
+      background-color: var(--vscode-testing-iconPassed, #4caf50);
     }
     section {
       margin-bottom: 12px;
@@ -220,7 +358,9 @@ function buildDetailHtml(
 <body>
   <h2>${escapeHtml(title)}</h2>
   <div class="subtitle">${escapeHtml(subtitle)}</div>
+  ${copyButton ? `<div class="actions">${copyButton}</div>` : ''}
   ${content}
+  ${copyScript}
 </body>
 </html>`;
 }
@@ -266,7 +406,7 @@ async function showSchema(
         'supabaseObjectSchema',
         `Schema: ${schema}.${name}`,
         vscode.ViewColumn.One,
-        { enableScripts: false },
+        { enableScripts: true },
       );
       context.subscriptions.push(panel);
 
@@ -279,12 +419,18 @@ async function showSchema(
         c.column_default ?? '',
       ]);
 
+      const sqlSnippet =
+        columns.length > 0
+          ? generateCreateTableSql(schema, name, columns)
+          : undefined;
+
       panel.webview.html = buildWebviewHtml(
         `${kind} Schema — ${schema}.${name}`,
         `Environment: ${node.env}  •  ${columns.length} column${columns.length !== 1 ? 's' : ''}`,
         headers,
         rows,
         '',
+        sqlSnippet,
       );
 
       if (columns.length === 0) {
@@ -325,9 +471,11 @@ async function showData(
         'supabaseObjectData',
         `Data: ${schema}.${name}`,
         vscode.ViewColumn.One,
-        { enableScripts: false },
+        { enableScripts: true },
       );
       context.subscriptions.push(panel);
+
+      const selectSql = generateSelectSql(schema, name);
 
       if (dataRows.length === 0) {
         const headers: string[] = [];
@@ -337,6 +485,7 @@ async function showData(
           headers,
           [],
           '',
+          selectSql,
         );
         return;
       }
@@ -364,6 +513,7 @@ async function showData(
         headers,
         rows,
         footerNote,
+        selectSql,
       );
 
       logger.debug(`Loaded ${dataRows.length} rows from ${schema}.${name}`);
@@ -409,7 +559,7 @@ async function showFunctionDetails(
         'supabaseFunctionDetails',
         `Function: ${node.schema}.${node.functionName}`,
         vscode.ViewColumn.One,
-        { enableScripts: false },
+        { enableScripts: true },
       );
       context.subscriptions.push(panel);
 
@@ -444,6 +594,7 @@ async function showFunctionDetails(
         `Function Details — ${node.schema}.${node.functionName}`,
         `Environment: ${node.env}  •  ${details.length} overload${details.length !== 1 ? 's' : ''}`,
         sections,
+        generateFunctionSql(details),
       );
 
       logger.debug(
@@ -485,7 +636,7 @@ async function showPolicyDetails(
         'supabasePolicyDetails',
         `Policy: ${node.schema}.${node.policyName}`,
         vscode.ViewColumn.One,
-        { enableScripts: false },
+        { enableScripts: true },
       );
       context.subscriptions.push(panel);
 
@@ -525,6 +676,7 @@ async function showPolicyDetails(
             body: detail.with_check ?? '(none)',
           },
         ],
+        generatePolicySql(detail),
       );
 
       logger.debug(
@@ -566,7 +718,7 @@ async function showTriggerDetails(
         'supabaseTriggerDetails',
         `Trigger: ${node.schema}.${node.triggerName}`,
         vscode.ViewColumn.One,
-        { enableScripts: false },
+        { enableScripts: true },
       );
       context.subscriptions.push(panel);
 
@@ -602,6 +754,7 @@ async function showTriggerDetails(
         `Trigger Details — ${node.schema}.${node.triggerName}`,
         `Environment: ${node.env}`,
         sections,
+        generateTriggerSql(details),
       );
 
       logger.debug(
@@ -643,7 +796,7 @@ async function showIndexDetails(
         'supabaseIndexDetails',
         `Index: ${node.schema}.${node.indexName}`,
         vscode.ViewColumn.One,
-        { enableScripts: false },
+        { enableScripts: true },
       );
       context.subscriptions.push(panel);
 
@@ -671,6 +824,7 @@ async function showIndexDetails(
             body: detail.indexdef,
           },
         ],
+        generateIndexSql(detail),
       );
 
       logger.debug(
@@ -708,7 +862,7 @@ async function showRoleDetails(
         'supabaseRoleDetails',
         `Role: ${node.roleName}`,
         vscode.ViewColumn.One,
-        { enableScripts: false },
+        { enableScripts: true },
       );
       context.subscriptions.push(panel);
 
@@ -746,6 +900,7 @@ async function showRoleDetails(
             ].join('\n'),
           },
         ],
+        generateRoleSql(detail),
       );
 
       logger.debug(`Loaded role details for ${node.roleName}`);
@@ -782,7 +937,7 @@ async function showStorageBucketDetails(
         'supabaseStorageBucketDetails',
         `Bucket: ${node.bucketName}`,
         vscode.ViewColumn.One,
-        { enableScripts: false },
+        { enableScripts: true },
       );
       context.subscriptions.push(panel);
 
@@ -796,6 +951,7 @@ async function showStorageBucketDetails(
               body: 'No storage bucket details found.',
             },
           ],
+          generateStorageBucketSql(node.bucketId, node.bucketName, node.isPublic),
         );
         return;
       }
@@ -814,6 +970,7 @@ async function showStorageBucketDetails(
             body,
           },
         ],
+        generateStorageBucketSql(node.bucketId, node.bucketName, node.isPublic),
       );
 
       logger.debug(`Loaded storage bucket details for ${node.bucketId}`);
@@ -965,6 +1122,184 @@ export function registerViewObjectCommands(
           context,
           logger,
         );
+      },
+    ),
+    vscode.commands.registerCommand(
+      Commands.CopySqlTable,
+      (node?: TableNode) => {
+        if (!node) {
+          vscode.window.showWarningMessage(missingSelectionMessage);
+          return;
+        }
+        const db = getDb(node, getLocalDb(), getLinkedDb());
+        if (!db) {
+          vscode.window.showWarningMessage(
+            'Database connection is not available for this environment.',
+          );
+          return;
+        }
+        void (async () => {
+          const columns = await db.getObjectSchema(node.schema, node.tableName);
+          const sql = generateCreateTableSql(node.schema, node.tableName, columns);
+          await copySqlToClipboard(sql, `${node.schema}.${node.tableName}`, logger);
+        })();
+      },
+    ),
+    vscode.commands.registerCommand(
+      Commands.CopySqlView,
+      (node?: ViewNode) => {
+        if (!node) {
+          vscode.window.showWarningMessage(missingSelectionMessage);
+          return;
+        }
+        const sql = generateSelectSql(node.schema, node.viewName);
+        void copySqlToClipboard(sql, `${node.schema}.${node.viewName}`, logger);
+      },
+    ),
+    vscode.commands.registerCommand(
+      Commands.CopySqlFunction,
+      (node?: FunctionNode) => {
+        if (!node) {
+          vscode.window.showWarningMessage(missingSelectionMessage);
+          return;
+        }
+        const db = getDb(node, getLocalDb(), getLinkedDb());
+        if (!db) {
+          vscode.window.showWarningMessage(
+            'Database connection is not available for this environment.',
+          );
+          return;
+        }
+        void (async () => {
+          const details = await db.getFunctionDetails(node.schema, node.functionName);
+          if (details.length === 0) {
+            vscode.window.showWarningMessage(
+              `No details found for function ${node.schema}.${node.functionName}.`,
+            );
+            return;
+          }
+          const sql = generateFunctionSql(details);
+          await copySqlToClipboard(sql, `${node.schema}.${node.functionName}`, logger);
+        })();
+      },
+    ),
+    vscode.commands.registerCommand(
+      Commands.CopySqlPolicy,
+      (node?: PolicyNode) => {
+        if (!node) {
+          vscode.window.showWarningMessage(missingSelectionMessage);
+          return;
+        }
+        const db = getDb(node, getLocalDb(), getLinkedDb());
+        if (!db) {
+          vscode.window.showWarningMessage(
+            'Database connection is not available for this environment.',
+          );
+          return;
+        }
+        void (async () => {
+          const details = await db.getPolicyDetails(node.schema, node.tableName, node.policyName);
+          if (details.length === 0) {
+            vscode.window.showWarningMessage(
+              `No details found for policy ${node.policyName}.`,
+            );
+            return;
+          }
+          const sql = generatePolicySql(details[0]);
+          await copySqlToClipboard(sql, node.policyName, logger);
+        })();
+      },
+    ),
+    vscode.commands.registerCommand(
+      Commands.CopySqlTrigger,
+      (node?: TriggerNode) => {
+        if (!node) {
+          vscode.window.showWarningMessage(missingSelectionMessage);
+          return;
+        }
+        const db = getDb(node, getLocalDb(), getLinkedDb());
+        if (!db) {
+          vscode.window.showWarningMessage(
+            'Database connection is not available for this environment.',
+          );
+          return;
+        }
+        void (async () => {
+          const details = await db.getTriggerDetails(node.schema, node.tableName, node.triggerName);
+          if (details.length === 0) {
+            vscode.window.showWarningMessage(
+              `No details found for trigger ${node.triggerName}.`,
+            );
+            return;
+          }
+          const sql = generateTriggerSql(details);
+          await copySqlToClipboard(sql, node.triggerName, logger);
+        })();
+      },
+    ),
+    vscode.commands.registerCommand(
+      Commands.CopySqlIndex,
+      (node?: IndexNode) => {
+        if (!node) {
+          vscode.window.showWarningMessage(missingSelectionMessage);
+          return;
+        }
+        const db = getDb(node, getLocalDb(), getLinkedDb());
+        if (!db) {
+          vscode.window.showWarningMessage(
+            'Database connection is not available for this environment.',
+          );
+          return;
+        }
+        void (async () => {
+          const details = await db.getIndexDetails(node.schema, node.tableName, node.indexName);
+          if (details.length === 0) {
+            vscode.window.showWarningMessage(
+              `No details found for index ${node.indexName}.`,
+            );
+            return;
+          }
+          const sql = generateIndexSql(details[0]);
+          await copySqlToClipboard(sql, node.indexName, logger);
+        })();
+      },
+    ),
+    vscode.commands.registerCommand(
+      Commands.CopySqlRole,
+      (node?: RoleNode) => {
+        if (!node) {
+          vscode.window.showWarningMessage(missingSelectionMessage);
+          return;
+        }
+        const db = getDb(node, getLocalDb(), getLinkedDb());
+        if (!db) {
+          vscode.window.showWarningMessage(
+            'Database connection is not available for this environment.',
+          );
+          return;
+        }
+        void (async () => {
+          const details = await db.getRoleDetails(node.roleName);
+          if (details.length === 0) {
+            vscode.window.showWarningMessage(
+              `No details found for role ${node.roleName}.`,
+            );
+            return;
+          }
+          const sql = generateRoleSql(details[0]);
+          await copySqlToClipboard(sql, node.roleName, logger);
+        })();
+      },
+    ),
+    vscode.commands.registerCommand(
+      Commands.CopySqlStorageBucket,
+      (node?: StorageBucketNode) => {
+        if (!node) {
+          vscode.window.showWarningMessage(missingSelectionMessage);
+          return;
+        }
+        const sql = generateStorageBucketSql(node.bucketId, node.bucketName, node.isPublic);
+        void copySqlToClipboard(sql, node.bucketName, logger);
       },
     ),
   );
