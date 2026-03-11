@@ -7,7 +7,14 @@
   "engines": {
     "vscode": "^1.85.0"
   },
-  "categories": ["Other"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CharlesDeJager/xtech-supabase.git"
+  },
+  "license": "MIT",
+  "categories": [
+    "Other"
+  ],
   "activationEvents": [
     "workspaceContains:**/supabase/config.toml",
     "onCommand:xtech-supabase.refresh"
@@ -60,7 +67,10 @@
         },
         "xtech-supabase.authMode": {
           "type": "string",
-          "enum": ["cli", "token"],
+          "enum": [
+            "cli",
+            "token"
+          ],
           "default": "cli",
           "description": "Auth mode: 'cli' uses Supabase CLI session, 'token' uses stored SecretStorage token"
         },
@@ -81,25 +91,30 @@
     }
   },
   "scripts": {
-    "compile": "tsc -p ./",
+    "compile": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node",
+    "compile:test": "tsc -p ./",
+    "typecheck": "tsc -p ./ --noEmit",
     "lint": "eslint src --ext .ts",
-    "test": "node ./out/test/runTest.js",
-    "package": "vsce package",
-    "watch": "tsc -watch -p ./"
+    "test": "npm run compile:test && node ./out/test/runTest.js",
+    "package": "npm run compile && vsce package",
+    "watch": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --watch"
   },
   "devDependencies": {
+    "@vscode/vsce": "^3.7.1",
+    "esbuild": "^0.25.0",
     "@types/node": "^20.0.0",
+    "@types/pg": "^8.11.11",
     "@types/vscode": "^1.85.0",
-    "@types/mocha": "^10.0.0",
-    "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0",
-    "eslint": "^8.0.0",
-    "mocha": "^10.0.0",
+    "@types/mocha": "^10.0.10",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^8.57.0",
+    "mocha": "^11.7.5",
     "typescript": "^5.0.0",
     "@vscode/test-electron": "^2.3.0",
     "glob": "^10.0.0"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0"
+    "pg": "^8.13.3"
   }
 }

@@ -1,5 +1,4 @@
-import * as child_process from 'child_process';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { Client } from 'pg';
 import { Logger } from '../logger';
 import {
   QUERY_SCHEMAS,
@@ -72,22 +71,18 @@ export class DatabaseService {
   private dbUrl: string;
   private token: string | undefined;
   private logger: Logger;
-  private supabase: SupabaseClient | undefined;
   private projectRoot: string | undefined;
 
-  constructor(dbUrl: string, token: string | undefined, logger: Logger, projectRoot?: string) {
+  constructor(
+    dbUrl: string,
+    token: string | undefined,
+    logger: Logger,
+    projectRoot?: string,
+  ) {
     this.dbUrl = dbUrl;
     this.token = token;
     this.logger = logger;
     this.projectRoot = projectRoot;
-
-    if (this.isLinkedUrl(dbUrl) && token) {
-      // For linked environments using Supabase JS client
-      const projectUrl = this.extractProjectUrl(dbUrl);
-      if (projectUrl) {
-        this.supabase = createClient(projectUrl, token);
-      }
-    }
   }
 
   private isLinkedUrl(url: string): boolean {
@@ -104,37 +99,42 @@ export class DatabaseService {
   }
 
   async query<T>(sql: string): Promise<T[]> {
-    if (this.projectRoot && !this.isLinkedUrl(this.dbUrl)) {
-      return this.queryViaCli<T>(sql);
+    if (this.canUsePostgres()) {
+      return this.queryViaPostgres<T>(sql);
     }
     if (this.token) {
       return this.queryViaManagementApi<T>(sql);
     }
-    this.logger.warn('No query method available (no CLI project root or token).');
+    this.logger.warn('No query method available (no direct DB URL or token).');
     return [];
   }
 
-  private async queryViaCli<T>(sql: string): Promise<T[]> {
-    return new Promise((resolve, reject) => {
-      child_process.execFile(
-        'supabase',
-        ['db', 'query', sql, '--local'],
-        { cwd: this.projectRoot, timeout: 30000 },
-        (err, stdout, stderr) => {
-          if (err) {
-            reject(new Error(`supabase db query failed: ${stderr || err.message}`));
-          } else {
-            try {
-              const result = JSON.parse(stdout) as T[];
-              resolve(result);
-            } catch {
-              // Try to parse as CSV or table output
-              resolve([]);
-            }
-          }
-        }
-      );
+  private canUsePostgres(): boolean {
+    return (
+      this.dbUrl.startsWith('postgres://') ||
+      this.dbUrl.startsWith('postgresql://')
+    );
+  }
+
+  private async queryViaPostgres<T>(sql: string): Promise<T[]> {
+    const useSsl = this.isLinkedUrl(this.dbUrl);
+    const client = new Client({
+      connectionString: this.dbUrl,
+      ssl: useSsl ? { rejectUnauthorized: false } : undefined,
+      connectionTimeoutMillis: 15000,
+      query_timeout: 30000,
     });
+
+    try {
+      await client.connect();
+      const result = await client.query(sql);
+      return result.rows as T[];
+    } catch (err) {
+      this.logger.error('Postgres query failed', err);
+      return [];
+    } finally {
+      await client.end().catch(() => undefined);
+    }
   }
 
   private async queryViaManagementApi<T>(sql: string): Promise<T[]> {
@@ -143,32 +143,53 @@ export class DatabaseService {
     }
     const refMatch = this.dbUrl.match(/([a-z0-9]+)\.supabase\.co/);
     if (!refMatch) {
-      this.logger.warn('Cannot determine project ref from DB URL for Management API.');
+      this.logger.warn(
+        'Cannot determine project ref from DB URL for Management API.',
+      );
       return [];
     }
     const ref = refMatch[1];
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
 
     try {
-      const response = await fetch(`https://api.supabase.com/v1/projects/${ref}/database/query`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `https://api.supabase.com/v1/projects/${ref}/database/query`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ query: sql }),
+          signal: controller.signal,
         },
-        body: JSON.stringify({ query: sql }),
-      });
+      );
 
       if (!response.ok) {
         const body = await response.text();
-        this.logger.warn(`Management API query failed: ${response.status} — ${body}`);
+        if (response.status === 401) {
+          this.logger.warn(
+            'Management API auth failed (401). Ensure token is a Supabase Personal Access Token (sbp_...) and not a project anon/service_role key. Also remove any leading "Bearer " prefix when storing the token.',
+          );
+        }
+        this.logger.warn(
+          `Management API query failed: ${response.status} — ${body}`,
+        );
         return [];
       }
 
-      const data = await response.json() as T[];
+      const data = (await response.json()) as T[];
       return data;
     } catch (err) {
+      if ((err as Error)?.name === 'AbortError') {
+        this.logger.warn('Management API query timed out after 15s');
+        return [];
+      }
       this.logger.error('Management API query error', err);
       return [];
+    } finally {
+      clearTimeout(timeout);
     }
   }
 

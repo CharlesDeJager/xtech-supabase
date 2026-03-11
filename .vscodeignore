@@ -1,4 +1,3 @@
-out
 node_modules
 .vscode-test/
 *.vsix
@@ -6,3 +5,19 @@ node_modules
 .github/
 src/
 tsconfig.json
+requirements.md
+config.toml
+esbuild.js
+out/**/*.d.ts
+out/**/*.js.map
+out/test/**
+out/auth/**
+out/commands/**
+out/database/**
+out/environment/**
+out/migrations/**
+out/treeView/**
+out/constants.js
+out/logger.js
+out/projectDiscovery.js
+out/settings.js

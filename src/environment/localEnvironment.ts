@@ -22,16 +22,28 @@ export class LocalEnvironment {
     try {
       const configPath = path.join(this.projectRoot, 'supabase', 'config.toml');
       const content = fs.readFileSync(configPath, 'utf-8');
-      const portMatch = content.match(/^\s*port\s*=\s*(\d+)/m);
-      if (portMatch) {
-        const port = portMatch[1];
+      const dbPort = this.extractDbPort(content);
+      if (dbPort) {
+        const port = dbPort;
         return `postgresql://postgres:postgres@localhost:${port}/postgres`;
       }
       // Default Supabase local port
       return 'postgresql://postgres:postgres@localhost:54322/postgres';
     } catch (err) {
-      this.logger.warn(`Could not read config.toml to determine DB port: ${err}`);
+      this.logger.warn(
+        `Could not read config.toml to determine DB port: ${err}`,
+      );
       return 'postgresql://postgres:postgres@localhost:54322/postgres';
+    }
+  }
+
+  async isRunning(): Promise<boolean> {
+    try {
+      await this.execCommand('supabase', ['status']);
+      return true;
+    } catch (err) {
+      this.logger.debug(`Local Supabase services are not running: ${err}`);
+      return false;
     }
   }
 
@@ -55,7 +67,12 @@ export class LocalEnvironment {
     for (const line of lines) {
       const trimmed = line.trim();
       // Skip header/separator lines
-      if (!trimmed || trimmed.startsWith('─') || trimmed.startsWith('|') || trimmed.startsWith('Local')) {
+      if (
+        !trimmed ||
+        trimmed.startsWith('─') ||
+        trimmed.startsWith('|') ||
+        trimmed.startsWith('Local')
+      ) {
         continue;
       }
       // Extract migration name from table rows like "  20240101000000  │  create_users  │ ..."
@@ -68,6 +85,16 @@ export class LocalEnvironment {
     return migrations;
   }
 
+  private extractDbPort(configToml: string): string | undefined {
+    const dbSectionMatch = configToml.match(/\[db\]([\s\S]*?)(\n\[|$)/m);
+    if (!dbSectionMatch) {
+      return undefined;
+    }
+    const dbSection = dbSectionMatch[1];
+    const portMatch = dbSection.match(/^\s*port\s*=\s*(\d+)/m);
+    return portMatch?.[1];
+  }
+
   private execCommand(cmd: string, args: string[]): Promise<string> {
     return new Promise((resolve, reject) => {
       child_process.execFile(
@@ -76,11 +103,15 @@ export class LocalEnvironment {
         { cwd: this.projectRoot, timeout: 30000 },
         (err, stdout, stderr) => {
           if (err) {
-            reject(new Error(`${cmd} ${args.join(' ')} failed: ${stderr || err.message}`));
+            reject(
+              new Error(
+                `${cmd} ${args.join(' ')} failed: ${stderr || err.message}`,
+              ),
+            );
           } else {
             resolve(stdout);
           }
-        }
+        },
       );
     });
   }
