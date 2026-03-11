@@ -17,6 +17,14 @@ export enum Commands {
   ViewIndexDetails = 'xtech-supabase.viewIndexDetails',
   ViewRoleDetails = 'xtech-supabase.viewRoleDetails',
   ViewStorageBucketDetails = 'xtech-supabase.viewStorageBucketDetails',
+  CopySqlTable = 'xtech-supabase.copySqlTable',
+  CopySqlView = 'xtech-supabase.copySqlView',
+  CopySqlFunction = 'xtech-supabase.copySqlFunction',
+  CopySqlPolicy = 'xtech-supabase.copySqlPolicy',
+  CopySqlTrigger = 'xtech-supabase.copySqlTrigger',
+  CopySqlIndex = 'xtech-supabase.copySqlIndex',
+  CopySqlRole = 'xtech-supabase.copySqlRole',
+  CopySqlStorageBucket = 'xtech-supabase.copySqlStorageBucket',
 }
 
 export const CONFIG_PROJECT_PATH = 'xtech-supabase.projectPath';
