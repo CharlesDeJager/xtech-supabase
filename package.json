@@ -26,7 +26,7 @@
         {
           "id": "supabase",
           "title": "Supabase",
-          "icon": "assets/xanectech-logo-activity.svg"
+          "icon": "assets/xanectech-logo.svg"
         }
       ]
     },
@@ -58,6 +58,15 @@
         "title": "Clear Supabase Access Token"
       }
     ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "xtech-supabase.refresh",
+          "when": "view == xtech-supabase.supabaseExplorer",
+          "group": "navigation@1"
+        }
+      ]
+    },
     "configuration": {
       "title": "XTECH Supabase",
       "properties": {
