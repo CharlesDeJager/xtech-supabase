@@ -7,6 +7,16 @@ export enum Commands {
   CreateMigration = 'xtech-supabase.createMigration',
   SetToken = 'xtech-supabase.setToken',
   ClearToken = 'xtech-supabase.clearToken',
+  ViewTableSchema = 'xtech-supabase.viewTableSchema',
+  ViewTableData = 'xtech-supabase.viewTableData',
+  ViewViewSchema = 'xtech-supabase.viewViewSchema',
+  ViewViewData = 'xtech-supabase.viewViewData',
+  ViewFunctionDetails = 'xtech-supabase.viewFunctionDetails',
+  ViewPolicyDetails = 'xtech-supabase.viewPolicyDetails',
+  ViewTriggerDetails = 'xtech-supabase.viewTriggerDetails',
+  ViewIndexDetails = 'xtech-supabase.viewIndexDetails',
+  ViewRoleDetails = 'xtech-supabase.viewRoleDetails',
+  ViewStorageBucketDetails = 'xtech-supabase.viewStorageBucketDetails',
 }
 
 export const CONFIG_PROJECT_PATH = 'xtech-supabase.projectPath';

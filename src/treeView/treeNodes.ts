@@ -183,14 +183,16 @@ export class FunctionNode extends vscode.TreeItem {
 export class TriggerNode extends vscode.TreeItem {
   constructor(
     public readonly triggerName: string,
+    public readonly schema: string,
     public readonly tableName: string,
+    public readonly timing: string,
     public readonly event: string,
     public readonly env: 'local' | 'linked',
   ) {
     super(triggerName, vscode.TreeItemCollapsibleState.None);
     this.contextValue = `trigger-${env}`;
-    this.description = `${tableName} [${event}]`;
-    this.tooltip = `Trigger: ${triggerName} on ${tableName} (${event}) (${env})`;
+    this.description = `${schema}.${tableName} [${timing} ${event}]`;
+    this.tooltip = `Trigger: ${triggerName} on ${schema}.${tableName} (${timing} ${event}) (${env})`;
     this.iconPath = new vscode.ThemeIcon('zap');
   }
 }
