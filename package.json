@@ -3,7 +3,7 @@
   "displayName": "XTECH Supabase",
   "description": "Manage local and linked Supabase environments from VS Code",
   "version": "0.0.1",
-  "publisher": "xtech",
+  "publisher": "XanecTechnologies",
   "engines": {
     "vscode": "^1.85.0"
   },
