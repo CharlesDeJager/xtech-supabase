@@ -1,0 +1,105 @@
+{
+  "name": "xtech-supabase",
+  "displayName": "XTECH Supabase",
+  "description": "Manage local and linked Supabase environments from VS Code",
+  "version": "0.0.1",
+  "publisher": "xtech",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": [
+    "workspaceContains:**/supabase/config.toml",
+    "onCommand:xtech-supabase.refresh"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "supabase",
+          "title": "Supabase",
+          "icon": "$(database)"
+        }
+      ]
+    },
+    "views": {
+      "supabase": [
+        {
+          "id": "xtech-supabase.supabaseExplorer",
+          "name": "Supabase Explorer"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "xtech-supabase.refresh",
+        "title": "Refresh Supabase Explorer",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "xtech-supabase.createMigration",
+        "title": "Create New Migration",
+        "icon": "$(add)"
+      },
+      {
+        "command": "xtech-supabase.setToken",
+        "title": "Set Supabase Access Token"
+      },
+      {
+        "command": "xtech-supabase.clearToken",
+        "title": "Clear Supabase Access Token"
+      }
+    ],
+    "configuration": {
+      "title": "XTECH Supabase",
+      "properties": {
+        "xtech-supabase.projectPath": {
+          "type": "string",
+          "description": "Override auto-detected Supabase project path"
+        },
+        "xtech-supabase.authMode": {
+          "type": "string",
+          "enum": ["cli", "token"],
+          "default": "cli",
+          "description": "Auth mode: 'cli' uses Supabase CLI session, 'token' uses stored SecretStorage token"
+        },
+        "xtech-supabase.refreshInterval": {
+          "type": "number",
+          "default": 0,
+          "description": "Auto-refresh interval in seconds (0 = disabled)"
+        },
+        "xtech-supabase.localDbUrl": {
+          "type": "string",
+          "description": "Override local database connection URL"
+        },
+        "xtech-supabase.linkedProjectRef": {
+          "type": "string",
+          "description": "Override linked Supabase project reference"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "lint": "eslint src --ext .ts",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "@types/mocha": "^10.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "mocha": "^10.0.0",
+    "typescript": "^5.0.0",
+    "@vscode/test-electron": "^2.3.0",
+    "glob": "^10.0.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  }
+}
