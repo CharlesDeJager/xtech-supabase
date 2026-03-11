@@ -9,6 +9,7 @@ import { MigrationService } from './migrations/migrationService';
 import { DatabaseService } from './database/databaseService';
 import { SupabaseTreeProvider } from './treeView/supabaseTreeProvider';
 import { createMigrationCommand } from './commands/createMigration';
+import { registerViewObjectCommands } from './commands/viewObjectDetails';
 import { getSettings } from './settings';
 
 let refreshTimer: ReturnType<typeof setInterval> | undefined;
@@ -34,6 +35,8 @@ export async function activate(
 
   const authProvider = new AuthProvider(context, logger);
   let migrationService: MigrationService | undefined;
+  let localDb: DatabaseService | undefined;
+  let linkedDb: DatabaseService | undefined;
 
   // Re-reads settings, re-runs discovery, and rebuilds all services.
   // Called on first activation, on Refresh, and when relevant settings change.
@@ -55,6 +58,8 @@ export async function activate(
         'No Supabase project found (no supabase/config.toml). Tree view will be empty.',
       );
       migrationService = undefined;
+      localDb = undefined;
+      linkedDb = undefined;
       treeProvider.setServices(undefined, undefined, undefined, false, false);
       treeProvider.refresh();
       return;
@@ -72,12 +77,12 @@ export async function activate(
       : undefined;
 
     const localDbUrl = await localEnv.getDbUrl();
-    const localDb =
+    localDb =
       localRunning && localDbUrl
         ? new DatabaseService(localDbUrl, undefined, logger, projectRoot)
         : undefined;
 
-    const linkedDb =
+    linkedDb =
       linkedRef && token
         ? new DatabaseService(
             `https://${linkedRef}.supabase.co`,
@@ -147,6 +152,13 @@ export async function activate(
       await authProvider.clearToken();
       vscode.window.showInformationMessage('Supabase access token cleared.');
     }),
+  );
+
+  registerViewObjectCommands(
+    context,
+    () => localDb,
+    () => linkedDb,
+    logger,
   );
 
   // Reinitialize automatically when any extension setting changes

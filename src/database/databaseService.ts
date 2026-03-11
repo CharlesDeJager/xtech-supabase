@@ -11,6 +11,13 @@ import {
   QUERY_ROLES,
   QUERY_POLICIES,
   QUERY_STORAGE_BUCKETS,
+  QUERY_OBJECT_SCHEMA,
+  QUERY_FUNCTION_DETAILS,
+  QUERY_POLICY_DETAILS,
+  QUERY_TRIGGER_DETAILS,
+  QUERY_INDEX_DETAILS,
+  QUERY_ROLE_DETAILS,
+  QUERY_STORAGE_BUCKET_DETAILS,
 } from './introspectionQueries';
 
 export interface SchemaRow {
@@ -35,7 +42,9 @@ export interface FunctionRow {
 
 export interface TriggerRow {
   trigger_name: string;
+  schema: string;
   table_name: string;
+  timing: string;
   event: string;
 }
 
@@ -65,6 +74,70 @@ export interface StorageBucketRow {
   id: string;
   name: string;
   public: boolean;
+}
+
+export interface ColumnRow {
+  column_name: string;
+  data_type: string;
+  is_nullable: string;
+  column_default: string | null;
+  ordinal_position: number;
+}
+
+export interface FunctionDetailsRow {
+  function_name: string;
+  schema: string;
+  argument_signature: string;
+  return_type: string;
+  language: string;
+  volatility: string;
+  security_definer: boolean;
+  definition: string;
+}
+
+export interface PolicyDetailsRow {
+  schema: string;
+  table_name: string;
+  policy_name: string;
+  cmd: string;
+  roles: string[] | string;
+  permissive: string;
+  using_expression: string | null;
+  with_check: string | null;
+}
+
+export interface TriggerDetailsRow {
+  schema: string;
+  trigger_name: string;
+  table_name: string;
+  timing: string;
+  event: string;
+  orientation: string;
+  action_statement: string;
+}
+
+export interface IndexDetailsRow {
+  schema: string;
+  table_name: string;
+  index_name: string;
+  indexdef: string;
+}
+
+export interface RoleDetailsRow {
+  role_name: string;
+  rolsuper: boolean;
+  rolinherit: boolean;
+  rolcreaterole: boolean;
+  rolcreatedb: boolean;
+  rolcanlogin: boolean;
+  rolreplication: boolean;
+  rolbypassrls: boolean;
+  rolconnlimit: number;
+  valid_until: string | null;
+}
+
+export interface StorageBucketDetailsRow {
+  details_json: Record<string, unknown>;
 }
 
 export class DatabaseService {
@@ -282,6 +355,145 @@ export class DatabaseService {
       return await this.query<StorageBucketRow>(QUERY_STORAGE_BUCKETS);
     } catch (err) {
       this.logger.error('getStorageBuckets failed', err);
+      return [];
+    }
+  }
+
+  async getObjectSchema(schema: string, name: string): Promise<ColumnRow[]> {
+    try {
+      const sql = QUERY_OBJECT_SCHEMA.replace(
+        '$1',
+        `'${schema.replace(/'/g, "''")}'`,
+      ).replace('$2', `'${name.replace(/'/g, "''")}'`);
+      return await this.query<ColumnRow>(sql);
+    } catch (err) {
+      this.logger.error(`getObjectSchema(${schema}.${name}) failed`, err);
+      return [];
+    }
+  }
+
+  async getObjectData(
+    schema: string,
+    name: string,
+    limit = 100,
+  ): Promise<Record<string, unknown>[]> {
+    try {
+      const safeSchema = `"${schema.replace(/"/g, '""')}"`;
+      const safeName = `"${name.replace(/"/g, '""')}"`;
+      const sql = `SELECT * FROM ${safeSchema}.${safeName} LIMIT ${limit};`;
+      return await this.query<Record<string, unknown>>(sql);
+    } catch (err) {
+      this.logger.error(`getObjectData(${schema}.${name}) failed`, err);
+      return [];
+    }
+  }
+
+  async getFunctionDetails(
+    schema: string,
+    name: string,
+  ): Promise<FunctionDetailsRow[]> {
+    try {
+      const sql = QUERY_FUNCTION_DETAILS.replace(
+        '$1',
+        `'${schema.replace(/'/g, "''")}'`,
+      ).replace('$2', `'${name.replace(/'/g, "''")}'`);
+      return await this.query<FunctionDetailsRow>(sql);
+    } catch (err) {
+      this.logger.error(`getFunctionDetails(${schema}.${name}) failed`, err);
+      return [];
+    }
+  }
+
+  async getPolicyDetails(
+    schema: string,
+    tableName: string,
+    policyName: string,
+  ): Promise<PolicyDetailsRow[]> {
+    try {
+      const sql = QUERY_POLICY_DETAILS.replace(
+        '$1',
+        `'${schema.replace(/'/g, "''")}'`,
+      )
+        .replace('$2', `'${tableName.replace(/'/g, "''")}'`)
+        .replace('$3', `'${policyName.replace(/'/g, "''")}'`);
+      return await this.query<PolicyDetailsRow>(sql);
+    } catch (err) {
+      this.logger.error(
+        `getPolicyDetails(${schema}.${tableName}.${policyName}) failed`,
+        err,
+      );
+      return [];
+    }
+  }
+
+  async getTriggerDetails(
+    schema: string,
+    tableName: string,
+    triggerName: string,
+  ): Promise<TriggerDetailsRow[]> {
+    try {
+      const sql = QUERY_TRIGGER_DETAILS.replace(
+        '$1',
+        `'${schema.replace(/'/g, "''")}'`,
+      )
+        .replace('$2', `'${tableName.replace(/'/g, "''")}'`)
+        .replace('$3', `'${triggerName.replace(/'/g, "''")}'`);
+      return await this.query<TriggerDetailsRow>(sql);
+    } catch (err) {
+      this.logger.error(
+        `getTriggerDetails(${schema}.${tableName}.${triggerName}) failed`,
+        err,
+      );
+      return [];
+    }
+  }
+
+  async getIndexDetails(
+    schema: string,
+    tableName: string,
+    indexName: string,
+  ): Promise<IndexDetailsRow[]> {
+    try {
+      const sql = QUERY_INDEX_DETAILS.replace(
+        '$1',
+        `'${schema.replace(/'/g, "''")}'`,
+      )
+        .replace('$2', `'${tableName.replace(/'/g, "''")}'`)
+        .replace('$3', `'${indexName.replace(/'/g, "''")}'`);
+      return await this.query<IndexDetailsRow>(sql);
+    } catch (err) {
+      this.logger.error(
+        `getIndexDetails(${schema}.${tableName}.${indexName}) failed`,
+        err,
+      );
+      return [];
+    }
+  }
+
+  async getRoleDetails(roleName: string): Promise<RoleDetailsRow[]> {
+    try {
+      const sql = QUERY_ROLE_DETAILS.replace(
+        '$1',
+        `'${roleName.replace(/'/g, "''")}'`,
+      );
+      return await this.query<RoleDetailsRow>(sql);
+    } catch (err) {
+      this.logger.error(`getRoleDetails(${roleName}) failed`, err);
+      return [];
+    }
+  }
+
+  async getStorageBucketDetails(
+    bucketId: string,
+  ): Promise<StorageBucketDetailsRow[]> {
+    try {
+      const sql = QUERY_STORAGE_BUCKET_DETAILS.replace(
+        '$1',
+        `'${bucketId.replace(/'/g, "''")}'`,
+      );
+      return await this.query<StorageBucketDetailsRow>(sql);
+    } catch (err) {
+      this.logger.error(`getStorageBucketDetails(${bucketId}) failed`, err);
       return [];
     }
   }

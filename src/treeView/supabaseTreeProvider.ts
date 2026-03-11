@@ -239,7 +239,15 @@ export class SupabaseTreeProvider implements vscode.TreeDataProvider<AnyTreeItem
         }
         const triggers = await db.getTriggers();
         return triggers.map(
-          (t) => new TriggerNode(t.trigger_name, t.table_name, t.event, env),
+          (t) =>
+            new TriggerNode(
+              t.trigger_name,
+              t.schema,
+              t.table_name,
+              t.timing,
+              t.event,
+              env,
+            ),
         );
       }
 

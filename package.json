@@ -56,6 +56,56 @@
       {
         "command": "xtech-supabase.clearToken",
         "title": "Clear Supabase Access Token"
+      },
+      {
+        "command": "xtech-supabase.viewTableSchema",
+        "title": "View Table Schema",
+        "icon": "$(symbol-namespace)"
+      },
+      {
+        "command": "xtech-supabase.viewTableData",
+        "title": "View Table Data",
+        "icon": "$(table)"
+      },
+      {
+        "command": "xtech-supabase.viewViewSchema",
+        "title": "View View Schema",
+        "icon": "$(symbol-namespace)"
+      },
+      {
+        "command": "xtech-supabase.viewViewData",
+        "title": "View View Data",
+        "icon": "$(table)"
+      },
+      {
+        "command": "xtech-supabase.viewFunctionDetails",
+        "title": "View Function Details",
+        "icon": "$(symbol-method)"
+      },
+      {
+        "command": "xtech-supabase.viewPolicyDetails",
+        "title": "View Policy Details",
+        "icon": "$(shield)"
+      },
+      {
+        "command": "xtech-supabase.viewTriggerDetails",
+        "title": "View Trigger Details",
+        "icon": "$(zap)"
+      },
+      {
+        "command": "xtech-supabase.viewIndexDetails",
+        "title": "View Index Details",
+        "icon": "$(key)"
+      },
+      {
+        "command": "xtech-supabase.viewRoleDetails",
+        "title": "View Role Details",
+        "icon": "$(person)"
+      },
+      {
+        "command": "xtech-supabase.viewStorageBucketDetails",
+        "title": "View Storage Bucket Details",
+        "icon": "$(archive)"
       }
     ],
     "menus": {
@@ -64,6 +114,58 @@
           "command": "xtech-supabase.refresh",
           "when": "view == xtech-supabase.supabaseExplorer",
           "group": "navigation@1"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "xtech-supabase.viewTableSchema",
+          "when": "view == xtech-supabase.supabaseExplorer && viewItem =~ /^table-/",
+          "group": "inline@1"
+        },
+        {
+          "command": "xtech-supabase.viewTableData",
+          "when": "view == xtech-supabase.supabaseExplorer && viewItem =~ /^table-/",
+          "group": "inline@2"
+        },
+        {
+          "command": "xtech-supabase.viewViewSchema",
+          "when": "view == xtech-supabase.supabaseExplorer && viewItem =~ /^view-/",
+          "group": "inline@1"
+        },
+        {
+          "command": "xtech-supabase.viewViewData",
+          "when": "view == xtech-supabase.supabaseExplorer && viewItem =~ /^view-/",
+          "group": "inline@2"
+        },
+        {
+          "command": "xtech-supabase.viewFunctionDetails",
+          "when": "view == xtech-supabase.supabaseExplorer && viewItem =~ /^function-/",
+          "group": "inline@1"
+        },
+        {
+          "command": "xtech-supabase.viewPolicyDetails",
+          "when": "view == xtech-supabase.supabaseExplorer && viewItem =~ /^policy-/",
+          "group": "inline@1"
+        },
+        {
+          "command": "xtech-supabase.viewTriggerDetails",
+          "when": "view == xtech-supabase.supabaseExplorer && viewItem =~ /^trigger-/",
+          "group": "inline@1"
+        },
+        {
+          "command": "xtech-supabase.viewIndexDetails",
+          "when": "view == xtech-supabase.supabaseExplorer && viewItem =~ /^index-/",
+          "group": "inline@1"
+        },
+        {
+          "command": "xtech-supabase.viewRoleDetails",
+          "when": "view == xtech-supabase.supabaseExplorer && viewItem =~ /^role-/",
+          "group": "inline@1"
+        },
+        {
+          "command": "xtech-supabase.viewStorageBucketDetails",
+          "when": "view == xtech-supabase.supabaseExplorer && viewItem =~ /^storageBucket-/",
+          "group": "inline@1"
         }
       ]
     },
