@@ -117,7 +117,7 @@ export class SupabaseTreeProvider implements vscode.TreeDataProvider<AnyTreeItem
 
     const categories = [
       'migrations',
-      'schemas',
+      'objects',
       'functions',
       'triggers',
       'enums',
@@ -214,12 +214,12 @@ export class SupabaseTreeProvider implements vscode.TreeDataProvider<AnyTreeItem
         return migrations.map((m) => new MigrationNode(m));
       }
 
-      case 'schemas': {
+      case 'objects': {
         if (!db) {
           return [];
         }
-        const schemas = await db.getSchemas();
-        return schemas.map((s) => new SchemaNode(s.schema_name, env));
+        const objects = await db.getSchemas();
+        return objects.map((s) => new SchemaNode(s.schema_name, env));
       }
 
       case 'functions': {
