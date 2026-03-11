@@ -9,7 +9,5 @@ export async function refreshAllCommand(
   logger.info('Refreshing Supabase Explorer…');
   treeProvider.refresh();
 
-  const statusBar = vscode.window.setStatusBarMessage('$(refresh) Supabase Explorer refreshed', 3000);
-  // statusBar is a Disposable — it auto-disposes after 3s, no manual cleanup needed
-  void statusBar;
+  vscode.window.setStatusBarMessage('$(refresh) Supabase Explorer refreshed', 3000);
 }
