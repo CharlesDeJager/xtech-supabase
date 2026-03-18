@@ -32,5 +32,7 @@ export const CONFIG_AUTH_MODE = 'xtech-supabase.authMode';
 export const CONFIG_REFRESH_INTERVAL = 'xtech-supabase.refreshInterval';
 export const CONFIG_LOCAL_DB_URL = 'xtech-supabase.localDbUrl';
 export const CONFIG_LINKED_PROJECT_REF = 'xtech-supabase.linkedProjectRef';
+export const CONFIG_USE_DATA_WRANGLER = 'xtech-supabase.useDataWrangler';
+export const CONFIG_TEMP_DIRECTORY = 'xtech-supabase.tempDirectory';
 
 export const SECRET_TOKEN_KEY = 'xtech-supabase.token';

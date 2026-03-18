@@ -32,6 +32,9 @@ import {
   generateRoleSql,
   generateStorageBucketSql,
 } from './sqlGenerators';
+import { getSettings } from '../settings';
+import { writeJSONLines } from '../utils';
+import path from 'path/win32';
 
 export {
   generateCreateTableSql,
@@ -465,58 +468,137 @@ async function showData(
       cancellable: false,
     },
     async () => {
-      const dataRows = await db.getObjectData(schema, name, limit);
+      let step = '';
+      try {
+        const dataRows = await db.getObjectData(schema, name, limit);
 
-      const panel = vscode.window.createWebviewPanel(
-        'supabaseObjectData',
-        `Data: ${schema}.${name}`,
-        vscode.ViewColumn.One,
-        { enableScripts: true },
-      );
-      context.subscriptions.push(panel);
+        if (!dataRows || dataRows.length === 0) {
+          logger.warn(`No data found in ${schema}.${name}`);
+          vscode.window.showInformationMessage(
+            `No data found in ${schema}.${name}.`,
+          );
+          return;
+        }
 
-      const selectSql = generateSelectSql(schema, name);
+        /** feature/data-capabilities
+         * Check if the DataWrangler extension is installed, if not display a message to ask user if they want to install
+         * If installed, use DataWrangler to display the data instead of a webview, this will allow users to easily filter, sort, and search the data
+         */
+        let displayMethod = '';
 
-      if (dataRows.length === 0) {
-        const headers: string[] = [];
-        panel.webview.html = buildWebviewHtml(
-          `${kind} Data — ${schema}.${name}`,
-          `Environment: ${node.env}`,
-          headers,
-          [],
-          '',
-          selectSql,
+        if (getSettings().useDataWrangler) {
+          step = 'Checking for DataWrangler extension';
+          const extensions = await Promise.all(
+            vscode.extensions.all.map(async (ext) => ext.id),
+          );
+          if (extensions.includes('ms-toolsai.datawrangler')) {
+            step = 'DataWrangler extension is installed';
+            vscode.window.showInformationMessage(
+              'DataWrangler extension detected. Using DataWrangler to display data with enhanced capabilities.',
+              'Continue',
+            );
+            displayMethod = 'datawrangler';
+          } else {
+            step = 'DataWrangler extension is not installed';
+            const install = 'Install DataWrangler';
+            const response = await vscode.window.showInformationMessage(
+              'For enhanced data viewing capabilities, we recommend installing the DataWrangler extension. Would you like to install it now?',
+              install,
+            );
+            if (response === install) {
+              step = 'Installing DataWrangler extension';
+              await vscode.commands.executeCommand(
+                'workbench.extensions.installExtension',
+                'ms-toolsai.datawrangler',
+              );
+              displayMethod = 'datawrangler';
+            } else {
+              // fallback to current webview implementation if user declines to install DataWrangler
+              displayMethod = 'webview';
+            }
+          }
+        }
+
+        if (!displayMethod || displayMethod === '') {
+          return;
+        }
+
+        if (displayMethod === 'webview') {
+          const panel = vscode.window.createWebviewPanel(
+            'supabaseObjectData',
+            `Data: ${schema}.${name}`,
+            vscode.ViewColumn.One,
+            { enableScripts: true },
+          );
+          context.subscriptions.push(panel);
+
+          const selectSql = generateSelectSql(schema, name);
+
+          if (dataRows.length === 0) {
+            const headers: string[] = [];
+            panel.webview.html = buildWebviewHtml(
+              `${kind} Data — ${schema}.${name}`,
+              `Environment: ${node.env}`,
+              headers,
+              [],
+              '',
+              selectSql,
+            );
+            return;
+          }
+
+          const headers = Object.keys(dataRows[0]);
+          const rows = dataRows.map((row) =>
+            headers.map((h) => {
+              const v = row[h];
+              if (v === null || v === undefined) {
+                return '';
+              }
+              if (typeof v === 'object') {
+                return JSON.stringify(v);
+              }
+              return String(v);
+            }),
+          );
+
+          const footerNote =
+            dataRows.length === limit ? ` (first ${limit} rows)` : '';
+
+          panel.webview.html = buildWebviewHtml(
+            `${kind} Data — ${schema}.${name}`,
+            `Environment: ${node.env}`,
+            headers,
+            rows,
+            footerNote,
+            selectSql,
+          );
+
+          logger.debug(`Loaded ${dataRows.length} rows from ${schema}.${name}`);
+        } else {
+          step = 'Using DataWrangler to display data';
+          // Use DataWrangler to display data
+
+          const tempFilePath = await writeJSONLines(
+            `temp_${schema}_${name}.jsonl`,
+            dataRows,
+            logger,
+          );
+
+          const uri = vscode.Uri.file(tempFilePath);
+          logger.debug(
+            `Data from ${schema}.${name} written to temporary file: ${tempFilePath} (uri: ${uri.toString()})`,
+          );
+
+          await vscode.commands.executeCommand(
+            'dataWrangler.openInDataWrangler',
+            uri,
+          );
+        }
+      } catch (err) {
+        logger.error(
+          `Error loading data from ${schema}.${name}: ${err}, step: ${step}`,
         );
-        return;
       }
-
-      const headers = Object.keys(dataRows[0]);
-      const rows = dataRows.map((row) =>
-        headers.map((h) => {
-          const v = row[h];
-          if (v === null || v === undefined) {
-            return '';
-          }
-          if (typeof v === 'object') {
-            return JSON.stringify(v);
-          }
-          return String(v);
-        }),
-      );
-
-      const footerNote =
-        dataRows.length === limit ? ` (first ${limit} rows)` : '';
-
-      panel.webview.html = buildWebviewHtml(
-        `${kind} Data — ${schema}.${name}`,
-        `Environment: ${node.env}`,
-        headers,
-        rows,
-        footerNote,
-        selectSql,
-      );
-
-      logger.debug(`Loaded ${dataRows.length} rows from ${schema}.${name}`);
     },
   );
 }
@@ -951,7 +1033,11 @@ async function showStorageBucketDetails(
               body: 'No storage bucket details found.',
             },
           ],
-          generateStorageBucketSql(node.bucketId, node.bucketName, node.isPublic),
+          generateStorageBucketSql(
+            node.bucketId,
+            node.bucketName,
+            node.isPublic,
+          ),
         );
         return;
       }
@@ -1140,22 +1226,27 @@ export function registerViewObjectCommands(
         }
         void (async () => {
           const columns = await db.getObjectSchema(node.schema, node.tableName);
-          const sql = generateCreateTableSql(node.schema, node.tableName, columns);
-          await copySqlToClipboard(sql, `${node.schema}.${node.tableName}`, logger);
+          const sql = generateCreateTableSql(
+            node.schema,
+            node.tableName,
+            columns,
+          );
+          await copySqlToClipboard(
+            sql,
+            `${node.schema}.${node.tableName}`,
+            logger,
+          );
         })();
       },
     ),
-    vscode.commands.registerCommand(
-      Commands.CopySqlView,
-      (node?: ViewNode) => {
-        if (!node) {
-          vscode.window.showWarningMessage(missingSelectionMessage);
-          return;
-        }
-        const sql = generateSelectSql(node.schema, node.viewName);
-        void copySqlToClipboard(sql, `${node.schema}.${node.viewName}`, logger);
-      },
-    ),
+    vscode.commands.registerCommand(Commands.CopySqlView, (node?: ViewNode) => {
+      if (!node) {
+        vscode.window.showWarningMessage(missingSelectionMessage);
+        return;
+      }
+      const sql = generateSelectSql(node.schema, node.viewName);
+      void copySqlToClipboard(sql, `${node.schema}.${node.viewName}`, logger);
+    }),
     vscode.commands.registerCommand(
       Commands.CopySqlFunction,
       (node?: FunctionNode) => {
@@ -1171,7 +1262,10 @@ export function registerViewObjectCommands(
           return;
         }
         void (async () => {
-          const details = await db.getFunctionDetails(node.schema, node.functionName);
+          const details = await db.getFunctionDetails(
+            node.schema,
+            node.functionName,
+          );
           if (details.length === 0) {
             vscode.window.showWarningMessage(
               `No details found for function ${node.schema}.${node.functionName}.`,
@@ -1179,7 +1273,11 @@ export function registerViewObjectCommands(
             return;
           }
           const sql = generateFunctionSql(details);
-          await copySqlToClipboard(sql, `${node.schema}.${node.functionName}`, logger);
+          await copySqlToClipboard(
+            sql,
+            `${node.schema}.${node.functionName}`,
+            logger,
+          );
         })();
       },
     ),
@@ -1198,7 +1296,11 @@ export function registerViewObjectCommands(
           return;
         }
         void (async () => {
-          const details = await db.getPolicyDetails(node.schema, node.tableName, node.policyName);
+          const details = await db.getPolicyDetails(
+            node.schema,
+            node.tableName,
+            node.policyName,
+          );
           if (details.length === 0) {
             vscode.window.showWarningMessage(
               `No details found for policy ${node.policyName}.`,
@@ -1225,7 +1327,11 @@ export function registerViewObjectCommands(
           return;
         }
         void (async () => {
-          const details = await db.getTriggerDetails(node.schema, node.tableName, node.triggerName);
+          const details = await db.getTriggerDetails(
+            node.schema,
+            node.tableName,
+            node.triggerName,
+          );
           if (details.length === 0) {
             vscode.window.showWarningMessage(
               `No details found for trigger ${node.triggerName}.`,
@@ -1252,7 +1358,11 @@ export function registerViewObjectCommands(
           return;
         }
         void (async () => {
-          const details = await db.getIndexDetails(node.schema, node.tableName, node.indexName);
+          const details = await db.getIndexDetails(
+            node.schema,
+            node.tableName,
+            node.indexName,
+          );
           if (details.length === 0) {
             vscode.window.showWarningMessage(
               `No details found for index ${node.indexName}.`,
@@ -1264,33 +1374,30 @@ export function registerViewObjectCommands(
         })();
       },
     ),
-    vscode.commands.registerCommand(
-      Commands.CopySqlRole,
-      (node?: RoleNode) => {
-        if (!node) {
-          vscode.window.showWarningMessage(missingSelectionMessage);
-          return;
-        }
-        const db = getDb(node, getLocalDb(), getLinkedDb());
-        if (!db) {
+    vscode.commands.registerCommand(Commands.CopySqlRole, (node?: RoleNode) => {
+      if (!node) {
+        vscode.window.showWarningMessage(missingSelectionMessage);
+        return;
+      }
+      const db = getDb(node, getLocalDb(), getLinkedDb());
+      if (!db) {
+        vscode.window.showWarningMessage(
+          'Database connection is not available for this environment.',
+        );
+        return;
+      }
+      void (async () => {
+        const details = await db.getRoleDetails(node.roleName);
+        if (details.length === 0) {
           vscode.window.showWarningMessage(
-            'Database connection is not available for this environment.',
+            `No details found for role ${node.roleName}.`,
           );
           return;
         }
-        void (async () => {
-          const details = await db.getRoleDetails(node.roleName);
-          if (details.length === 0) {
-            vscode.window.showWarningMessage(
-              `No details found for role ${node.roleName}.`,
-            );
-            return;
-          }
-          const sql = generateRoleSql(details[0]);
-          await copySqlToClipboard(sql, node.roleName, logger);
-        })();
-      },
-    ),
+        const sql = generateRoleSql(details[0]);
+        await copySqlToClipboard(sql, node.roleName, logger);
+      })();
+    }),
     vscode.commands.registerCommand(
       Commands.CopySqlStorageBucket,
       (node?: StorageBucketNode) => {
@@ -1298,7 +1405,11 @@ export function registerViewObjectCommands(
           vscode.window.showWarningMessage(missingSelectionMessage);
           return;
         }
-        const sql = generateStorageBucketSql(node.bucketId, node.bucketName, node.isPublic);
+        const sql = generateStorageBucketSql(
+          node.bucketId,
+          node.bucketName,
+          node.isPublic,
+        );
         void copySqlToClipboard(sql, node.bucketName, logger);
       },
     ),

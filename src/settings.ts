@@ -5,6 +5,8 @@ import {
   CONFIG_LINKED_PROJECT_REF,
   CONFIG_PROJECT_PATH,
   CONFIG_REFRESH_INTERVAL,
+  CONFIG_USE_DATA_WRANGLER,
+  CONFIG_TEMP_DIRECTORY,
 } from './constants';
 
 export interface ExtensionSettings {
@@ -13,6 +15,8 @@ export interface ExtensionSettings {
   refreshInterval: number;
   localDbUrl: string | undefined;
   linkedProjectRef: string | undefined;
+  useDataWrangler: boolean;
+  tempDirectory?: string;
 }
 
 export function getSettings(): ExtensionSettings {
@@ -24,5 +28,7 @@ export function getSettings(): ExtensionSettings {
     refreshInterval: config.get<number>(CONFIG_REFRESH_INTERVAL, 0),
     localDbUrl: config.get<string>(CONFIG_LOCAL_DB_URL),
     linkedProjectRef: config.get<string>(CONFIG_LINKED_PROJECT_REF),
+    useDataWrangler: config.get<boolean>(CONFIG_USE_DATA_WRANGLER, false),
+    tempDirectory: config.get<string>(CONFIG_TEMP_DIRECTORY, '.supabase-temp'),
   };
 }

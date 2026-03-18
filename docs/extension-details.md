@@ -42,13 +42,14 @@ If no Supabase project is discovered, the tree remains empty until a valid proje
 
 All settings are under Extensions > XTECH Supabase.
 
-| Setting                         | Type         | Default | Purpose                                      |
-| ------------------------------- | ------------ | ------- | -------------------------------------------- |
-| xtech-supabase.projectPath      | string       | none    | Override auto-detected Supabase project path |
-| xtech-supabase.authMode         | cli or token | cli     | Select authentication source                 |
-| xtech-supabase.refreshInterval  | number       | 0       | Auto-refresh in seconds (0 disables)         |
-| xtech-supabase.localDbUrl       | string       | none    | Override local Postgres URL                  |
-| xtech-supabase.linkedProjectRef | string       | none    | Override linked project reference            |
+| Setting                         | Type         | Default | Purpose                                       |
+| ------------------------------- | ------------ | ------- | --------------------------------------------- |
+| xtech-supabase.projectPath      | string       | none    | Override auto-detected Supabase project path  |
+| xtech-supabase.authMode         | cli or token | cli     | Select authentication source                  |
+| xtech-supabase.refreshInterval  | number       | 0       | Auto-refresh in seconds (0 disables)          |
+| xtech-supabase.localDbUrl       | string       | none    | Override local Postgres URL                   |
+| xtech-supabase.linkedProjectRef | string       | none    | Override linked project reference             |
+| xtech-supabase.useDataWrangler  | boolean      | false   | Use Data Wrangler for table/view data display |
 
 ## Authentication
 

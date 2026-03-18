@@ -277,6 +277,16 @@
         "xtech-supabase.linkedProjectRef": {
           "type": "string",
           "description": "Override linked Supabase project reference"
+        },
+        "xtech-supabase.useDataWrangler": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use Data Wrangler for table/view data display (requires Data Wrangler extension)"
+        },
+        "xtech-supabase.tempDirectory": {
+          "type": "string",
+          "description": "Directory for temporary files (defaults to OS temp directory)",
+          "default": ".supabase-temp"
         }
       }
     }
@@ -291,21 +301,22 @@
     "watch": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --watch"
   },
   "devDependencies": {
-    "@vscode/vsce": "^3.7.1",
-    "esbuild": "^0.25.0",
+    "@types/mocha": "^10.0.10",
     "@types/node": "^20.0.0",
     "@types/pg": "^8.11.11",
     "@types/vscode": "^1.85.0",
-    "@types/mocha": "^10.0.10",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
-    "eslint": "^8.57.0",
-    "mocha": "^11.7.5",
-    "typescript": "^5.0.0",
     "@vscode/test-electron": "^2.3.0",
-    "glob": "^10.0.0"
+    "@vscode/vsce": "^3.7.1",
+    "esbuild": "^0.25.0",
+    "eslint": "^8.57.0",
+    "glob": "^10.0.0",
+    "mocha": "^11.7.5",
+    "typescript": "^5.0.0"
   },
   "dependencies": {
-    "pg": "^8.13.3"
+    "pg": "^8.13.3",
+    "vscode": "^1.1.37"
   }
 }
