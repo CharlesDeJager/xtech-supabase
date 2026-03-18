@@ -6,6 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## [0.0.3] - 2026-03-18
+
+- **Data preview in Data Wrangler**- You can now use the Microsoft Data Wranger extension to view data from tables and views. The data is first written to a temporary file ({tempDirectory}/tmp*{schema}*{object}.jsonl) as Data Wrangler does not support opening data from memory. Temp directory can be changed with `xtech-supabase.useDataWrangler` setting.
+- **Use Data Wrangler**- You can disable the use of Data Wrangler for data preview by setting `xtech-supabase.useDataWrangler` to false.
+
+---
+
 ## [0.0.2] — 2026-03-11
 
 ### Added
