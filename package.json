@@ -2,7 +2,7 @@
   "name": "xtech-supabase",
   "displayName": "XTECH Supabase",
   "description": "Manage local and linked Supabase environments from VS Code",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "publisher": "XanecTechnologies",
   "engines": {
     "vscode": "^1.85.0"
@@ -312,7 +312,7 @@
     "esbuild": "^0.25.0",
     "eslint": "^8.57.0",
     "glob": "^10.0.0",
-    "mocha": "^11.7.5",
+    "mocha": "^11.3.0",
     "typescript": "^5.0.0"
   },
   "dependencies": {

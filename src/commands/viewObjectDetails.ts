@@ -1,6 +1,6 @@
-import * as vscode from 'vscode';
-import * as crypto from 'crypto';
-import { Commands } from '../constants';
+import * as vscode from "vscode";
+import * as crypto from "crypto";
+import { Commands } from "../constants";
 import {
   DatabaseService,
   ColumnRow,
@@ -10,7 +10,7 @@ import {
   IndexDetailsRow,
   RoleDetailsRow,
   StorageBucketDetailsRow,
-} from '../database/databaseService';
+} from "../database/databaseService";
 import {
   TableNode,
   ViewNode,
@@ -20,8 +20,8 @@ import {
   IndexNode,
   RoleNode,
   StorageBucketNode,
-} from '../treeView/treeNodes';
-import { Logger } from '../logger';
+} from "../treeView/treeNodes";
+import { Logger } from "../logger";
 import {
   generateCreateTableSql,
   generateSelectSql,
@@ -31,10 +31,9 @@ import {
   generateIndexSql,
   generateRoleSql,
   generateStorageBucketSql,
-} from './sqlGenerators';
-import { getSettings } from '../settings';
-import { writeJSONLines } from '../utils';
-import path from 'path/win32';
+} from "./sqlGenerators";
+import { getSettings } from "../settings";
+import { writeJSONLines } from "../utils";
 
 export {
   generateCreateTableSql,
@@ -50,12 +49,12 @@ export {
 type ObjectNode = TableNode | ViewNode;
 
 function escapeHtml(value: unknown): string {
-  const str = value === null || value === undefined ? '' : String(value);
+  const str = value === null || value === undefined ? "" : String(value);
   return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 function buildWebviewHtml(
@@ -66,31 +65,31 @@ function buildWebviewHtml(
   footerNote: string,
   sqlSnippet?: string,
 ): string {
-  const headerCells = headers.map((h) => `<th>${escapeHtml(h)}</th>`).join('');
+  const headerCells = headers.map((h) => `<th>${escapeHtml(h)}</th>`).join("");
 
   const bodyRows = rows
     .map((row) => {
       const cells = row
         .map((cell) =>
-          cell === ''
+          cell === ""
             ? `<td class="null">null</td>`
             : `<td>${escapeHtml(cell)}</td>`,
         )
-        .join('');
+        .join("");
       return `<tr>${cells}</tr>`;
     })
-    .join('\n');
+    .join("\n");
 
   const emptyState =
     rows.length === 0
       ? `<p class="empty">No rows found.</p>`
-      : `<p class="row-count">${rows.length} row${rows.length !== 1 ? 's' : ''}${footerNote}</p>`;
+      : `<p class="row-count">${rows.length} row${rows.length !== 1 ? "s" : ""}${footerNote}</p>`;
 
   const nonce = generateNonce();
-  const scriptCsp = sqlSnippet ? `script-src 'nonce-${nonce}';` : '';
+  const scriptCsp = sqlSnippet ? `script-src 'nonce-${nonce}';` : "";
   const copyButton = sqlSnippet
     ? `<button id="copy-sql-btn" class="copy-btn" data-sql="${escapeHtml(sqlSnippet)}">📋 Copy SQL</button>`
-    : '';
+    : "";
   const copyScript = sqlSnippet
     ? `<script nonce="${nonce}">
   (function () {
@@ -110,7 +109,7 @@ function buildWebviewHtml(
     });
   })();
 </script>`
-    : '';
+    : "";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -193,12 +192,12 @@ function buildWebviewHtml(
 <body>
   <h2>${escapeHtml(title)}</h2>
   <div class="subtitle">${escapeHtml(subtitle)}</div>
-  ${copyButton ? `<div class="actions">${copyButton}</div>` : ''}
+  ${copyButton ? `<div class="actions">${copyButton}</div>` : ""}
   <div class="table-wrap">
     ${
       rows.length > 0
         ? `<table><thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table>`
-        : ''
+        : ""
     }
   </div>
   ${emptyState}
@@ -219,21 +218,21 @@ function getDb(
   localDb: DatabaseService | undefined,
   linkedDb: DatabaseService | undefined,
 ): DatabaseService | undefined {
-  return node.env === 'local' ? localDb : linkedDb;
+  return node.env === "local" ? localDb : linkedDb;
 }
 
 function stringifyValue(value: unknown): string {
   if (value === null || value === undefined) {
-    return '(null)';
+    return "(null)";
   }
-  if (typeof value === 'object') {
+  if (typeof value === "object") {
     return JSON.stringify(value, null, 2);
   }
   return String(value);
 }
 
 function generateNonce(): string {
-  return crypto.randomBytes(16).toString('hex');
+  return crypto.randomBytes(16).toString("hex");
 }
 
 async function copySqlToClipboard(
@@ -268,13 +267,13 @@ function buildDetailHtml(
       <pre>${escapeHtml(section.body)}</pre>
     </section>`,
     )
-    .join('\n');
+    .join("\n");
 
   const nonce = generateNonce();
-  const scriptCsp = sqlSnippet ? `script-src 'nonce-${nonce}';` : '';
+  const scriptCsp = sqlSnippet ? `script-src 'nonce-${nonce}';` : "";
   const copyButton = sqlSnippet
     ? `<button id="copy-sql-btn" class="copy-btn" data-sql="${escapeHtml(sqlSnippet)}">📋 Copy SQL</button>`
-    : '';
+    : "";
   const copyScript = sqlSnippet
     ? `<script nonce="${nonce}">
   (function () {
@@ -294,7 +293,7 @@ function buildDetailHtml(
     });
   })();
 </script>`
-    : '';
+    : "";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -361,7 +360,7 @@ function buildDetailHtml(
 <body>
   <h2>${escapeHtml(title)}</h2>
   <div class="subtitle">${escapeHtml(subtitle)}</div>
-  ${copyButton ? `<div class="actions">${copyButton}</div>` : ''}
+  ${copyButton ? `<div class="actions">${copyButton}</div>` : ""}
   ${content}
   ${copyScript}
 </body>
@@ -374,9 +373,9 @@ function nodeLabel(node: ObjectNode): {
   kind: string;
 } {
   if (node instanceof TableNode) {
-    return { schema: node.schema, name: node.tableName, kind: 'Table' };
+    return { schema: node.schema, name: node.tableName, kind: "Table" };
   }
-  return { schema: node.schema, name: node.viewName, kind: 'View' };
+  return { schema: node.schema, name: node.viewName, kind: "View" };
 }
 
 async function showSchema(
@@ -389,7 +388,7 @@ async function showSchema(
   const db = getDb(node, localDb, linkedDb);
   if (!db) {
     vscode.window.showWarningMessage(
-      'Database connection is not available for this environment.',
+      "Database connection is not available for this environment.",
     );
     return;
   }
@@ -406,20 +405,20 @@ async function showSchema(
       const columns: ColumnRow[] = await db.getObjectSchema(schema, name);
 
       const panel = vscode.window.createWebviewPanel(
-        'supabaseObjectSchema',
+        "supabaseObjectSchema",
         `Schema: ${schema}.${name}`,
         vscode.ViewColumn.One,
         { enableScripts: true },
       );
       context.subscriptions.push(panel);
 
-      const headers = ['#', 'Column', 'Type', 'Nullable', 'Default'];
+      const headers = ["#", "Column", "Type", "Nullable", "Default"];
       const rows = columns.map((c) => [
         String(c.ordinal_position),
         c.column_name,
         c.data_type,
-        c.is_nullable === 'YES' ? 'YES' : 'NO',
-        c.column_default ?? '',
+        c.is_nullable === "YES" ? "YES" : "NO",
+        c.column_default ?? "",
       ]);
 
       const sqlSnippet =
@@ -429,10 +428,10 @@ async function showSchema(
 
       panel.webview.html = buildWebviewHtml(
         `${kind} Schema — ${schema}.${name}`,
-        `Environment: ${node.env}  •  ${columns.length} column${columns.length !== 1 ? 's' : ''}`,
+        `Environment: ${node.env}  •  ${columns.length} column${columns.length !== 1 ? "s" : ""}`,
         headers,
         rows,
-        '',
+        "",
         sqlSnippet,
       );
 
@@ -453,7 +452,7 @@ async function showData(
   const db = getDb(node, localDb, linkedDb);
   if (!db) {
     vscode.window.showWarningMessage(
-      'Database connection is not available for this environment.',
+      "Database connection is not available for this environment.",
     );
     return;
   }
@@ -468,7 +467,7 @@ async function showData(
       cancellable: false,
     },
     async () => {
-      let step = '';
+      let step = "";
       try {
         const dataRows = await db.getObjectData(schema, name, limit);
 
@@ -484,48 +483,48 @@ async function showData(
          * Check if the DataWrangler extension is installed, if not display a message to ask user if they want to install
          * If installed, use DataWrangler to display the data instead of a webview, this will allow users to easily filter, sort, and search the data
          */
-        let displayMethod = '';
+        let displayMethod = "";
 
         if (getSettings().useDataWrangler) {
-          step = 'Checking for DataWrangler extension';
+          step = "Checking for DataWrangler extension";
           const extensions = await Promise.all(
             vscode.extensions.all.map(async (ext) => ext.id),
           );
-          if (extensions.includes('ms-toolsai.datawrangler')) {
-            step = 'DataWrangler extension is installed';
+          if (extensions.includes("ms-toolsai.datawrangler")) {
+            step = "DataWrangler extension is installed";
             vscode.window.showInformationMessage(
-              'DataWrangler extension detected. Using DataWrangler to display data with enhanced capabilities.',
-              'Continue',
+              "DataWrangler extension detected. Using DataWrangler to display data with enhanced capabilities.",
+              "Continue",
             );
-            displayMethod = 'datawrangler';
+            displayMethod = "datawrangler";
           } else {
-            step = 'DataWrangler extension is not installed';
-            const install = 'Install DataWrangler';
+            step = "DataWrangler extension is not installed";
+            const install = "Install DataWrangler";
             const response = await vscode.window.showInformationMessage(
-              'For enhanced data viewing capabilities, we recommend installing the DataWrangler extension. Would you like to install it now?',
+              "For enhanced data viewing capabilities, we recommend installing the DataWrangler extension. Would you like to install it now?",
               install,
             );
             if (response === install) {
-              step = 'Installing DataWrangler extension';
+              step = "Installing DataWrangler extension";
               await vscode.commands.executeCommand(
-                'workbench.extensions.installExtension',
-                'ms-toolsai.datawrangler',
+                "workbench.extensions.installExtension",
+                "ms-toolsai.datawrangler",
               );
-              displayMethod = 'datawrangler';
+              displayMethod = "datawrangler";
             } else {
               // fallback to current webview implementation if user declines to install DataWrangler
-              displayMethod = 'webview';
+              displayMethod = "webview";
             }
           }
         }
 
-        if (!displayMethod || displayMethod === '') {
+        if (!displayMethod || displayMethod === "") {
           return;
         }
 
-        if (displayMethod === 'webview') {
+        if (displayMethod === "webview") {
           const panel = vscode.window.createWebviewPanel(
-            'supabaseObjectData',
+            "supabaseObjectData",
             `Data: ${schema}.${name}`,
             vscode.ViewColumn.One,
             { enableScripts: true },
@@ -541,7 +540,7 @@ async function showData(
               `Environment: ${node.env}`,
               headers,
               [],
-              '',
+              "",
               selectSql,
             );
             return;
@@ -552,9 +551,9 @@ async function showData(
             headers.map((h) => {
               const v = row[h];
               if (v === null || v === undefined) {
-                return '';
+                return "";
               }
-              if (typeof v === 'object') {
+              if (typeof v === "object") {
                 return JSON.stringify(v);
               }
               return String(v);
@@ -562,7 +561,7 @@ async function showData(
           );
 
           const footerNote =
-            dataRows.length === limit ? ` (first ${limit} rows)` : '';
+            dataRows.length === limit ? ` (first ${limit} rows)` : "";
 
           panel.webview.html = buildWebviewHtml(
             `${kind} Data — ${schema}.${name}`,
@@ -575,7 +574,7 @@ async function showData(
 
           logger.debug(`Loaded ${dataRows.length} rows from ${schema}.${name}`);
         } else {
-          step = 'Using DataWrangler to display data';
+          step = "Using DataWrangler to display data";
           // Use DataWrangler to display data
 
           const tempFilePath = await writeJSONLines(
@@ -590,7 +589,7 @@ async function showData(
           );
 
           await vscode.commands.executeCommand(
-            'dataWrangler.openInDataWrangler',
+            "dataWrangler.openInDataWrangler",
             uri,
           );
         }
@@ -605,7 +604,7 @@ async function showData(
 
 function normalizeRoles(roles: string[] | string): string {
   if (Array.isArray(roles)) {
-    return roles.join(', ');
+    return roles.join(", ");
   }
   return roles;
 }
@@ -620,7 +619,7 @@ async function showFunctionDetails(
   const db = getDb(node, localDb, linkedDb);
   if (!db) {
     vscode.window.showWarningMessage(
-      'Database connection is not available for this environment.',
+      "Database connection is not available for this environment.",
     );
     return;
   }
@@ -638,7 +637,7 @@ async function showFunctionDetails(
       );
 
       const panel = vscode.window.createWebviewPanel(
-        'supabaseFunctionDetails',
+        "supabaseFunctionDetails",
         `Function: ${node.schema}.${node.functionName}`,
         vscode.ViewColumn.One,
         { enableScripts: true },
@@ -651,8 +650,8 @@ async function showFunctionDetails(
           `Environment: ${node.env}`,
           [
             {
-              heading: 'Result',
-              body: 'No function details found.',
+              heading: "Result",
+              body: "No function details found.",
             },
           ],
         );
@@ -666,15 +665,15 @@ async function showFunctionDetails(
           `Return Type: ${d.return_type}`,
           `Language: ${d.language}`,
           `Volatility: ${d.volatility}`,
-          `Security: ${d.security_definer ? 'DEFINER' : 'INVOKER'}`,
-          '',
+          `Security: ${d.security_definer ? "DEFINER" : "INVOKER"}`,
+          "",
           d.definition,
-        ].join('\n'),
+        ].join("\n"),
       }));
 
       panel.webview.html = buildDetailHtml(
         `Function Details — ${node.schema}.${node.functionName}`,
-        `Environment: ${node.env}  •  ${details.length} overload${details.length !== 1 ? 's' : ''}`,
+        `Environment: ${node.env}  •  ${details.length} overload${details.length !== 1 ? "s" : ""}`,
         sections,
         generateFunctionSql(details),
       );
@@ -696,7 +695,7 @@ async function showPolicyDetails(
   const db = getDb(node, localDb, linkedDb);
   if (!db) {
     vscode.window.showWarningMessage(
-      'Database connection is not available for this environment.',
+      "Database connection is not available for this environment.",
     );
     return;
   }
@@ -715,7 +714,7 @@ async function showPolicyDetails(
       );
 
       const panel = vscode.window.createWebviewPanel(
-        'supabasePolicyDetails',
+        "supabasePolicyDetails",
         `Policy: ${node.schema}.${node.policyName}`,
         vscode.ViewColumn.One,
         { enableScripts: true },
@@ -728,8 +727,8 @@ async function showPolicyDetails(
           `Environment: ${node.env}`,
           [
             {
-              heading: 'Result',
-              body: 'No policy details found.',
+              heading: "Result",
+              body: "No policy details found.",
             },
           ],
         );
@@ -742,20 +741,20 @@ async function showPolicyDetails(
         `Environment: ${node.env}  •  Table: ${detail.schema}.${detail.table_name}`,
         [
           {
-            heading: 'Metadata',
+            heading: "Metadata",
             body: [
               `Command: ${detail.cmd}`,
               `Permissive: ${detail.permissive}`,
               `Roles: ${normalizeRoles(detail.roles)}`,
-            ].join('\n'),
+            ].join("\n"),
           },
           {
-            heading: 'USING Expression',
-            body: detail.using_expression ?? '(none)',
+            heading: "USING Expression",
+            body: detail.using_expression ?? "(none)",
           },
           {
-            heading: 'WITH CHECK Expression',
-            body: detail.with_check ?? '(none)',
+            heading: "WITH CHECK Expression",
+            body: detail.with_check ?? "(none)",
           },
         ],
         generatePolicySql(detail),
@@ -778,7 +777,7 @@ async function showTriggerDetails(
   const db = getDb(node, localDb, linkedDb);
   if (!db) {
     vscode.window.showWarningMessage(
-      'Database connection is not available for this environment.',
+      "Database connection is not available for this environment.",
     );
     return;
   }
@@ -797,7 +796,7 @@ async function showTriggerDetails(
       );
 
       const panel = vscode.window.createWebviewPanel(
-        'supabaseTriggerDetails',
+        "supabaseTriggerDetails",
         `Trigger: ${node.schema}.${node.triggerName}`,
         vscode.ViewColumn.One,
         { enableScripts: true },
@@ -810,8 +809,8 @@ async function showTriggerDetails(
           `Environment: ${node.env}`,
           [
             {
-              heading: 'Result',
-              body: 'No trigger details found.',
+              heading: "Result",
+              body: "No trigger details found.",
             },
           ],
         );
@@ -826,10 +825,10 @@ async function showTriggerDetails(
           `Timing: ${detail.timing}`,
           `Event: ${detail.event}`,
           `Orientation: ${detail.orientation}`,
-          '',
-          'Action Statement:',
+          "",
+          "Action Statement:",
           detail.action_statement,
-        ].join('\n'),
+        ].join("\n"),
       }));
 
       panel.webview.html = buildDetailHtml(
@@ -856,7 +855,7 @@ async function showIndexDetails(
   const db = getDb(node, localDb, linkedDb);
   if (!db) {
     vscode.window.showWarningMessage(
-      'Database connection is not available for this environment.',
+      "Database connection is not available for this environment.",
     );
     return;
   }
@@ -875,7 +874,7 @@ async function showIndexDetails(
       );
 
       const panel = vscode.window.createWebviewPanel(
-        'supabaseIndexDetails',
+        "supabaseIndexDetails",
         `Index: ${node.schema}.${node.indexName}`,
         vscode.ViewColumn.One,
         { enableScripts: true },
@@ -888,8 +887,8 @@ async function showIndexDetails(
           `Environment: ${node.env}`,
           [
             {
-              heading: 'Result',
-              body: 'No index details found.',
+              heading: "Result",
+              body: "No index details found.",
             },
           ],
         );
@@ -902,7 +901,7 @@ async function showIndexDetails(
         `Environment: ${node.env}  •  Table: ${detail.schema}.${detail.table_name}`,
         [
           {
-            heading: 'Definition',
+            heading: "Definition",
             body: detail.indexdef,
           },
         ],
@@ -926,7 +925,7 @@ async function showRoleDetails(
   const db = getDb(node, localDb, linkedDb);
   if (!db) {
     vscode.window.showWarningMessage(
-      'Database connection is not available for this environment.',
+      "Database connection is not available for this environment.",
     );
     return;
   }
@@ -941,7 +940,7 @@ async function showRoleDetails(
       const details: RoleDetailsRow[] = await db.getRoleDetails(node.roleName);
 
       const panel = vscode.window.createWebviewPanel(
-        'supabaseRoleDetails',
+        "supabaseRoleDetails",
         `Role: ${node.roleName}`,
         vscode.ViewColumn.One,
         { enableScripts: true },
@@ -954,8 +953,8 @@ async function showRoleDetails(
           `Environment: ${node.env}`,
           [
             {
-              heading: 'Result',
-              body: 'No role details found.',
+              heading: "Result",
+              body: "No role details found.",
             },
           ],
         );
@@ -968,7 +967,7 @@ async function showRoleDetails(
         `Environment: ${node.env}`,
         [
           {
-            heading: 'Attributes',
+            heading: "Attributes",
             body: [
               `Superuser: ${detail.rolsuper}`,
               `Inherit: ${detail.rolinherit}`,
@@ -978,8 +977,8 @@ async function showRoleDetails(
               `Replication: ${detail.rolreplication}`,
               `Bypass RLS: ${detail.rolbypassrls}`,
               `Connection Limit: ${detail.rolconnlimit}`,
-              `Valid Until: ${detail.valid_until ?? '(never)'}`,
-            ].join('\n'),
+              `Valid Until: ${detail.valid_until ?? "(never)"}`,
+            ].join("\n"),
           },
         ],
         generateRoleSql(detail),
@@ -1000,7 +999,7 @@ async function showStorageBucketDetails(
   const db = getDb(node, localDb, linkedDb);
   if (!db) {
     vscode.window.showWarningMessage(
-      'Database connection is not available for this environment.',
+      "Database connection is not available for this environment.",
     );
     return;
   }
@@ -1016,7 +1015,7 @@ async function showStorageBucketDetails(
         await db.getStorageBucketDetails(node.bucketId);
 
       const panel = vscode.window.createWebviewPanel(
-        'supabaseStorageBucketDetails',
+        "supabaseStorageBucketDetails",
         `Bucket: ${node.bucketName}`,
         vscode.ViewColumn.One,
         { enableScripts: true },
@@ -1029,8 +1028,8 @@ async function showStorageBucketDetails(
           `Environment: ${node.env}`,
           [
             {
-              heading: 'Result',
-              body: 'No storage bucket details found.',
+              heading: "Result",
+              body: "No storage bucket details found.",
             },
           ],
           generateStorageBucketSql(
@@ -1045,14 +1044,14 @@ async function showStorageBucketDetails(
       const payload = details[0].details_json ?? {};
       const body = Object.entries(payload)
         .map(([key, value]) => `${key}: ${stringifyValue(value)}`)
-        .join('\n');
+        .join("\n");
 
       panel.webview.html = buildDetailHtml(
         `Storage Bucket Details — ${node.bucketName}`,
         `Environment: ${node.env}  •  Bucket ID: ${node.bucketId}`,
         [
           {
-            heading: 'Metadata',
+            heading: "Metadata",
             body,
           },
         ],
@@ -1071,7 +1070,7 @@ export function registerViewObjectCommands(
   logger: Logger,
 ): void {
   const missingSelectionMessage =
-    'Select an object in Supabase Explorer before running this command.';
+    "Select an object in Supabase Explorer before running this command.";
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
@@ -1220,7 +1219,7 @@ export function registerViewObjectCommands(
         const db = getDb(node, getLocalDb(), getLinkedDb());
         if (!db) {
           vscode.window.showWarningMessage(
-            'Database connection is not available for this environment.',
+            "Database connection is not available for this environment.",
           );
           return;
         }
@@ -1257,7 +1256,7 @@ export function registerViewObjectCommands(
         const db = getDb(node, getLocalDb(), getLinkedDb());
         if (!db) {
           vscode.window.showWarningMessage(
-            'Database connection is not available for this environment.',
+            "Database connection is not available for this environment.",
           );
           return;
         }
@@ -1291,7 +1290,7 @@ export function registerViewObjectCommands(
         const db = getDb(node, getLocalDb(), getLinkedDb());
         if (!db) {
           vscode.window.showWarningMessage(
-            'Database connection is not available for this environment.',
+            "Database connection is not available for this environment.",
           );
           return;
         }
@@ -1322,7 +1321,7 @@ export function registerViewObjectCommands(
         const db = getDb(node, getLocalDb(), getLinkedDb());
         if (!db) {
           vscode.window.showWarningMessage(
-            'Database connection is not available for this environment.',
+            "Database connection is not available for this environment.",
           );
           return;
         }
@@ -1353,7 +1352,7 @@ export function registerViewObjectCommands(
         const db = getDb(node, getLocalDb(), getLinkedDb());
         if (!db) {
           vscode.window.showWarningMessage(
-            'Database connection is not available for this environment.',
+            "Database connection is not available for this environment.",
           );
           return;
         }
@@ -1382,7 +1381,7 @@ export function registerViewObjectCommands(
       const db = getDb(node, getLocalDb(), getLinkedDb());
       if (!db) {
         vscode.window.showWarningMessage(
-          'Database connection is not available for this environment.',
+          "Database connection is not available for this environment.",
         );
         return;
       }

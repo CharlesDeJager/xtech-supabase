@@ -6,6 +6,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## [0.0.4] - 2026-04-16 - **Depndabot updates**
+
+Bump the npm_and_yarn group across 1 directory with 2 updates
+Bumps the npm_and_yarn group with 1 update in the / directory: [flatted](https://github.com/WebReflection/flatted).
+
+Updates `flatted` from 3.4.1 to 3.4.2
+
+- [Commits](WebReflection/flatted@v3.4.1...v3.4.2)
+
+Updates `minimist` from 0.0.8 to 1.2.8
+
+- [Changelog](https://github.com/minimistjs/minimist/blob/main/CHANGELOG.md)
+- [Commits](minimistjs/minimist@v0.0.8...v1.2.8)
+
+---
+
 ## [0.0.3] - 2026-03-18
 
 - **Data preview in Data Wrangler**- You can now use the Microsoft Data Wranger extension to view data from tables and views. The data is first written to a temporary file ({tempDirectory}/tmp*{schema}*{object}.jsonl) as Data Wrangler does not support opening data from memory. Temp directory can be changed with `xtech-supabase.useDataWrangler` setting.

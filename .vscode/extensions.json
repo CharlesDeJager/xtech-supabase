@@ -1,0 +1,14 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "eamodio.gitlens",
+    "ms-vscode.extension-test-runner",
+    "christian-kohler.path-intellisense",
+    "christian-kohler.npm-intellisense",
+    "yzhang.markdown-all-in-one",
+    "davidanson.vscode-markdownlint",
+    "streetsidesoftware.code-spell-checker",
+    "shd101wyy.markdown-preview-enhanced"
+  ]
+}

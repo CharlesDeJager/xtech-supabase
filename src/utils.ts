@@ -1,7 +1,7 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import { getSettings } from './settings';
-import { Logger } from './logger';
+import * as fs from "fs";
+import * as path from "path";
+import { getSettings } from "./settings";
+import { Logger } from "./logger";
 
 const getTempDirectory = async (logger: Logger) => {
   try {
@@ -12,7 +12,7 @@ const getTempDirectory = async (logger: Logger) => {
     logger.debug(`Using temp directory: ${tempDir}`);
     return tempDir;
   } catch (err) {
-    logger.error('Error creating temp directory:', err);
+    logger.error("Error creating temp directory:", err);
     throw err;
   }
 };
@@ -35,7 +35,7 @@ export async function deleteTempFile(
 
 export async function writeJSONLines(
   filePath: string,
-  data: any[],
+  data: unknown[],
   logger: Logger,
 ): Promise<string> {
   try {
@@ -44,14 +44,14 @@ export async function writeJSONLines(
       `Writing JSON Lines to: ${tempDir ? path.resolve(tempDir, filePath) : filePath}`,
     );
     if (!tempDir) {
-      throw new Error('Temp directory is not defined');
+      throw new Error("Temp directory is not defined");
     }
     const outPath = path.resolve(tempDir, filePath);
-    const jsonLines = data.map((item) => JSON.stringify(item)).join('\n');
+    const jsonLines = data.map((item) => JSON.stringify(item)).join("\n");
     fs.writeFileSync(outPath, jsonLines, {
-      encoding: 'utf-8',
+      encoding: "utf-8",
       mode: 0o666,
-      flag: 'w',
+      flag: "w",
     });
     return Promise.resolve(outPath);
   } catch (err) {
@@ -59,13 +59,13 @@ export async function writeJSONLines(
   }
 }
 
-export function readJSONLines(filePath: string): any[] {
+export function readJSONLines(filePath: string): unknown[] {
   if (!fs.existsSync(filePath)) {
     return [];
   }
-  const content = fs.readFileSync(filePath, 'utf-8');
+  const content = fs.readFileSync(filePath, "utf-8");
   return content
-    .split('\n')
-    .filter((line: string) => line.trim() !== '')
+    .split("\n")
+    .filter((line: string) => line.trim() !== "")
     .map((line: string) => JSON.parse(line));
 }
